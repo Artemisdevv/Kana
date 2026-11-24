@@ -36,18 +36,29 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.LinkAnnotation
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.TextLinkStyles
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontStyle
+import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.text.withLink
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.DialogWindowProvider
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import com.artemis.ebookreader.R
+import com.artemis.ebookreader.data.dictionary.DictionaryCredit
 import com.artemis.ebookreader.data.dictionary.DictionaryResult
 import com.artemis.ebookreader.data.dictionary.OfflineDictionary
 import com.artemis.ebookreader.data.dictionary.OnlineDictionary
 import com.artemis.ebookreader.data.dictionary.dictionaryQuery
 import kotlinx.coroutines.launch
+
+private const val COLLAPSED_DEFINITION_COUNT = 3
+
+private data class DefinitionGroup(val online: Boolean, val entryIndex: Int, val partOfSpeech: String?)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -62,6 +73,12 @@ internal fun ReaderDictionarySheet(
     var offline by remember(query) { mutableStateOf<DictionaryResult?>(null) }
     var online by remember(query) { mutableStateOf<DictionaryResult?>(null) }
     var onlineRequest by remember(query) { mutableIntStateOf(0) }
+    var expandedGroups by remember(query) { mutableStateOf(emptySet<DefinitionGroup>()) }
+    val offlineEntries = (offline as? DictionaryResult.Found)?.entries.orEmpty()
+    val resolvedWord = offlineEntries.map { it.word }.distinct().singleOrNull()?.takeUnless { it == query?.key }
+    val toggleGroup: (DefinitionGroup) -> Unit = { group ->
+        expandedGroups = if (group in expandedGroups) expandedGroups - group else expandedGroups + group
+    }
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = false)
     val scope = rememberCoroutineScope()
     LaunchedEffect(query) {
@@ -97,7 +114,7 @@ internal fun ReaderDictionarySheet(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(
-                    text = query?.selection ?: stringResource(R.string.dictionary_title),
+                    text = resolvedWord ?: query?.selection ?: stringResource(R.string.dictionary_title),
                     style = MaterialTheme.typography.headlineSmall,
                     modifier = Modifier.weight(1f).semantics { heading() },
                 )
@@ -118,31 +135,33 @@ internal fun ReaderDictionarySheet(
                 if (query == null) {
                     item { DictionaryNote(stringResource(R.string.dictionary_select_word)) }
                 } else {
-                    item {
-                        DictionarySource(
-                            stringResource(R.string.dictionary_offline),
-                            stringResource(R.string.dictionary_wordnet),
-                        )
-                    }
-                    dictionaryResults(offline, query.key, online = false)
+                    val headingWord = resolvedWord ?: query.key
+                    dictionaryResults(
+                        offline, headingWord, online = false,
+                        expandedGroups = expandedGroups, toggleGroup = toggleGroup,
+                    )
                     item { HorizontalDivider() }
                     if (onlineRequest == 0) {
                         item {
                             Column {
                                 TextButton(onClick = { onlineRequest++ }) {
-                                    Text(stringResource(R.string.dictionary_more_online))
+                                    Text(stringResource(R.string.dictionary_search_online))
                                 }
                                 DictionaryNote(stringResource(R.string.dictionary_online_privacy))
                             }
                         }
                     } else {
                         item {
-                            DictionarySource(
+                            Text(
                                 stringResource(R.string.dictionary_online),
-                                stringResource(R.string.dictionary_online_provider),
+                                style = MaterialTheme.typography.titleMedium,
+                                modifier = Modifier.semantics { heading() },
                             )
                         }
-                        dictionaryResults(online, query.key, online = true)
+                        dictionaryResults(
+                            online, headingWord, online = true,
+                            expandedGroups = expandedGroups, toggleGroup = toggleGroup,
+                        )
                         if (online == DictionaryResult.Unavailable || online == DictionaryResult.RateLimited) {
                             item {
                                 TextButton(onClick = {
@@ -152,13 +171,26 @@ internal fun ReaderDictionarySheet(
                             }
                         }
                     }
+                    item {
+                        DictionaryFooter(
+                            onlineRequested = onlineRequest > 0,
+                            credits = (online as? DictionaryResult.Found)?.entries.orEmpty()
+                                .flatMap { it.credits }.distinct(),
+                        )
+                    }
                 }
             }
         }
     }
 }
 
-private fun LazyListScope.dictionaryResults(result: DictionaryResult?, key: String, online: Boolean) {
+private fun LazyListScope.dictionaryResults(
+    result: DictionaryResult?,
+    headingWord: String,
+    online: Boolean,
+    expandedGroups: Set<DefinitionGroup>,
+    toggleGroup: (DefinitionGroup) -> Unit,
+) {
     when (result) {
         null -> item { DictionaryNote(stringResource(R.string.dictionary_looking_up)) }
         DictionaryResult.Missing -> item {
@@ -168,49 +200,69 @@ private fun LazyListScope.dictionaryResults(result: DictionaryResult?, key: Stri
             DictionaryNote(stringResource(if (online) R.string.dictionary_online_unavailable else R.string.dictionary_offline_unavailable))
         }
         DictionaryResult.RateLimited -> item { DictionaryNote(stringResource(R.string.dictionary_online_rate_limited)) }
-        is DictionaryResult.Found -> for (entry in result.entries) {
-            if (entry.word != key || entry.phonetics.isNotEmpty()) {
+        is DictionaryResult.Found -> for ((entryIndex, entry) in result.entries.withIndex()) {
+            val showWord = entry.word != headingWord || result.entries.any { it.word != entry.word }
+            if (showWord || entry.phonetics.isNotEmpty()) {
                 item {
                     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                        if (entry.word != key) {
-                            val label = if (online) entry.word else stringResource(R.string.dictionary_base_word, entry.word)
-                            Text(label, style = MaterialTheme.typography.titleMedium)
+                        if (showWord) {
+                            Text(
+                                entry.word,
+                                style = MaterialTheme.typography.titleMedium,
+                                modifier = Modifier.semantics { heading() },
+                            )
                         }
                         if (entry.phonetics.isNotEmpty()) DictionaryNote(entry.phonetics.joinToString("  "))
                     }
                 }
             }
-            if (entry.credits.isNotEmpty()) {
-                item {
-                    val browser = LocalUriHandler.current
-                    Column {
-                        for (credit in entry.credits) {
-                            TextButton(onClick = { runCatching { browser.openUri(credit.url) } }) { Text(credit.name) }
-                        }
-                    }
-                }
-            }
-            for (meaning in entry.meanings) {
-                meaning.partOfSpeech?.let { part ->
-                    item {
+            val groups = entry.meanings.groupBy { it.partOfSpeech }.entries
+            for ((groupIndex, groupMeanings) in groups.withIndex()) {
+                val (part, meanings) = groupMeanings
+                val groupKey = "dictionary:$online:$entryIndex:$groupIndex"
+                if (part != null) {
+                    item(key = "$groupKey:part") {
                         Text(
-                            part, style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.primary,
+                            part,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            fontStyle = FontStyle.Italic,
                             modifier = Modifier.semantics { heading() },
                         )
                     }
                 }
-                items(meaning.senses.size) { index ->
-                    val sense = meaning.senses[index]
-                    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                        Text(sense.definition, style = MaterialTheme.typography.bodyMedium)
-                        for (example in sense.examples) {
-                            Text(
-                                example,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                style = MaterialTheme.typography.bodySmall,
-                                fontStyle = FontStyle.Italic,
-                                modifier = Modifier.padding(start = 12.dp),
-                            )
+                val senses = meanings.flatMap { it.senses }
+                val group = DefinitionGroup(online, entryIndex, part)
+                val expanded = group in expandedGroups
+                items(
+                    count = if (expanded) senses.size else minOf(senses.size, COLLAPSED_DEFINITION_COUNT),
+                    key = { index -> "$groupKey:$index" },
+                ) { index ->
+                    val sense = senses[index]
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text(
+                            stringResource(R.string.dictionary_number, index + 1),
+                            style = MaterialTheme.typography.bodyMedium,
+                        )
+                        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                            Text(sense.definition, style = MaterialTheme.typography.bodyMedium)
+                            sense.examples.firstOrNull()?.let { example ->
+                                Text(
+                                    example,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    fontStyle = FontStyle.Italic,
+                                    modifier = Modifier.padding(start = 12.dp),
+                                )
+                            }
+                        }
+                    }
+                }
+                if (senses.size > COLLAPSED_DEFINITION_COUNT) {
+                    item(key = "$groupKey:toggle") {
+                        TextButton(onClick = { toggleGroup(group) }) {
+                            val label = if (expanded) R.string.dictionary_show_less else R.string.dictionary_show_more
+                            Text(stringResource(label))
                         }
                     }
                 }
@@ -220,10 +272,30 @@ private fun LazyListScope.dictionaryResults(result: DictionaryResult?, key: Stri
 }
 
 @Composable
-private fun DictionarySource(title: String, source: String) {
+private fun DictionaryFooter(onlineRequested: Boolean, credits: List<DictionaryCredit>) {
     Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-        Text(title, style = MaterialTheme.typography.titleMedium, modifier = Modifier.semantics { heading() })
-        DictionaryNote(source)
+        DictionaryNote(stringResource(R.string.dictionary_wordnet))
+        if (onlineRequested) {
+            val provider = stringResource(R.string.dictionary_online_provider)
+            val browser = LocalUriHandler.current
+            val color = MaterialTheme.colorScheme.onSurfaceVariant
+            val linkStyles = TextLinkStyles(style = SpanStyle(color = color, textDecoration = TextDecoration.Underline))
+            Text(
+                text = buildAnnotatedString {
+                    append(provider)
+                    for (credit in credits) {
+                        append(" · ")
+                        withLink(LinkAnnotation.Url(credit.url, linkStyles) {
+                            runCatching { browser.openUri(credit.url) }
+                        }) {
+                            append(credit.name)
+                        }
+                    }
+                },
+                color = color,
+                style = MaterialTheme.typography.bodySmall,
+            )
+        }
     }
 }
 
