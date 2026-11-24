@@ -95,6 +95,7 @@ import com.artemis.ebookreader.feature.library.LibrarySearchBar
 import com.artemis.ebookreader.feature.library.LibrarySortButton
 import com.artemis.ebookreader.feature.library.LibraryViewModel
 import com.artemis.ebookreader.feature.settings.SettingsScreen
+import com.artemis.ebookreader.feature.settings.UpdateController
 import com.artemis.ebookreader.feature.settings.SettingsPage
 import com.artemis.ebookreader.feature.settings.SettingsSplitPane
 import com.artemis.ebookreader.ui.EmptyScreen
@@ -124,6 +125,7 @@ internal fun ReaderShell(
     library: LibraryViewModel,
     readerAppearance: ReaderAppearanceSettings,
     appAppearance: ApplicationThemeSettings,
+    updates: UpdateController,
     onOpen: (String) -> Unit,
 ) {
     var selectedDestination by rememberSaveable { mutableStateOf(PrimaryDestination.Home) }
@@ -215,11 +217,11 @@ internal fun ReaderShell(
             detailsTransition.currentState == detailsBookId
         try {
             events.collect {
-                if (previewPage != null) pageMotion.seekTo(it.progress, targetState = null)
+                if (previewPage != null) pageMotion.seekTo(it.progress, targetState = previewPage.parent)
                 if (previewBook) detailsMotion.seekTo(it.progress, targetState = null)
             }
             when {
-                selectedDestination == PrimaryDestination.Settings && settingsPage != null -> settingsPage = null
+                selectedDestination == PrimaryDestination.Settings && settingsPage != null -> settingsPage = settingsPage?.parent
                 selectedDestination == PrimaryDestination.History && historySearch != null -> historySearch = null
                 selectedDestination == PrimaryDestination.Library && detailsBookId != null -> detailsBookId = null
                 selectedDestination == PrimaryDestination.Library && library.selection.value != null -> library.clearSelection()
@@ -263,7 +265,7 @@ internal fun ReaderShell(
             },
             navigationIcon = {
                 if (page != null) {
-                    IconButton(onClick = { settingsPage = null }) {
+                    IconButton(onClick = { settingsPage = page.parent }) {
                         Icon(painterResource(R.drawable.ic_back), stringResource(R.string.navigate_back))
                     }
                 }
@@ -381,6 +383,7 @@ internal fun ReaderShell(
                                         page = page,
                                         readerAppearance = readerAppearance,
                                         appAppearance = appAppearance,
+                                        updates = updates,
                                         library = library,
                                         libraryLayout = libraryLayout,
                                         scope = scope,
@@ -396,7 +399,9 @@ internal fun ReaderShell(
                             val details: @Composable (Boolean) -> Unit = { split ->
                                 pageTransition.AnimatedContent(
                                     modifier = Modifier.fillMaxSize().clipToBounds(),
-                                    transitionSpec = { Motion.push(forward = targetState != null).using(null) },
+                                    transitionSpec = {
+                                        Motion.push(forward = targetState != null && targetState != initialState?.parent).using(null)
+                                    },
                                 ) { page ->
                                     val active = destination == selectedDestination && page == settingsPage
                                     Column(
@@ -427,7 +432,7 @@ internal fun ReaderShell(
                                 SettingsSplitPane(
                                     page = settingsPage,
                                     directive = paneDirective,
-                                    list = { showPage(null, settingsPage) },
+                                    list = { showPage(null, settingsPage?.parent ?: settingsPage) },
                                     detail = { details(true) },
                                 )
                             } else {
