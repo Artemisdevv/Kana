@@ -34,9 +34,9 @@ class ShellNavigationTest {
             }
             tabs.forEach(::tap)
             awaitNode { it.isSelected && it.hasLabel("Settings") }
-            awaitNode { it.text?.toString() == "EBookReader" }
+            awaitNode { it.text?.toString() == "Kana" }
             automation.executeShellCommand("input keyevent KEYCODE_BACK").close()
-            awaitNode { it.text?.toString() == "EBookReader" }
+            awaitNode { it.text?.toString() == "Kana" }
             automation.executeShellCommand("input keyevent KEYCODE_BACK").close()
             awaitNode("History selected after Back") { it.isSelected && it.hasLabel("History") }
         } finally {
@@ -54,7 +54,7 @@ class ShellNavigationTest {
         awaitNode { it.isSelected && it.hasLabel("History") }
         clickTab("Settings")
         awaitNode { it.isSelected && it.hasLabel("Settings") }
-        awaitNode { it.text?.toString() == "EBookReader" }
+        awaitNode { it.text?.toString() == "Kana" }
         val readingPreferences = awaitNode { it.isClickable && it.hasLabel("Reading preferences") }
         assertNull(automation.rootInActiveWindow?.find { it.text?.toString() == "Fullscreen Reading" })
         assertTrue(readingPreferences.performAction(AccessibilityNodeInfo.ACTION_CLICK))
@@ -73,9 +73,62 @@ class ShellNavigationTest {
         assertTrue(libraryPreferences.performAction(AccessibilityNodeInfo.ACTION_CLICK))
         awaitNode { it.text?.toString() == "Title (A–Z)" }
         automation.executeShellCommand("input keyevent KEYCODE_BACK").close()
-        awaitNode { it.text?.toString() == "EBookReader" }
+        awaitNode { it.text?.toString() == "Kana" }
         automation.executeShellCommand("input keyevent KEYCODE_BACK").close()
         awaitNode { it.isSelected && it.hasLabel("History") }
+    }
+
+    @Test
+    fun updatesAndAboutAreSubpagesAndLicensesReturnToAbout() {
+        val activity = instrumentation.startActivitySync(
+            Intent(instrumentation.targetContext, MainActivity::class.java)
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK),
+        )
+        try {
+            clickTab("Settings")
+            awaitNode { it.text?.toString() == "Preferences" }
+            val landing = automation.rootInActiveWindow
+            for (label in listOf("Check for updates", "Automatic update checks", "GitHub", "Report an issue", "Open-source licenses")) {
+                assertNull(landing?.find { it.text?.toString() == label })
+            }
+
+            clickSettingsRow("Updates", "Preferences", "Data & storage", "General")
+            awaitNode { it.text?.toString() == "Installed version" }
+            awaitNode { it.isClickable && it.hasLabel("Check for updates") }
+            awaitNode { it.isCheckable && it.hasLabel("Automatic update checks") }
+            clickSettingsBack()
+
+            clickSettingsRow("About Kana", "Preferences", "Data & storage", "General")
+            awaitNode { it.text?.toString() == "Free and open-source EPUB reader for Android." }
+            clickSettingsRow("Open-source licenses", "Application information", "Links", "License")
+            awaitNode { it.text?.toString() == "Core libraries" }
+            automation.executeShellCommand("input keyevent KEYCODE_BACK").close()
+            clickSettingsRow("Open-source licenses", "Application information", "Links", "License")
+            awaitNode { it.text?.toString() == "Core libraries" }
+            clickSettingsBack()
+            awaitNode { it.isClickable && it.hasLabel("Open-source licenses") }
+        } finally {
+            instrumentation.runOnMainSync { activity.finish() }
+        }
+    }
+
+    private fun clickSettingsBack() {
+        val back = instrumentation.targetContext.getString(R.string.navigate_back)
+        val button = awaitNode { it.isClickable && it.contentDescription?.toString() == back }
+        assertTrue(button.performAction(AccessibilityNodeInfo.ACTION_CLICK))
+    }
+
+    private fun clickSettingsRow(label: String, vararg groups: String) {
+        val deadline = SystemClock.uptimeMillis() + 6000
+        while (SystemClock.uptimeMillis() < deadline) {
+            val root = automation.rootInActiveWindow
+            val row = root?.find { it.isVisibleToUser && it.isClickable && it.hasLabel(label) }
+            if (row != null && row.performAction(AccessibilityNodeInfo.ACTION_CLICK)) return
+            val scroll = root?.find { node -> node.isScrollable && groups.any { node.hasLabel(it) } }
+            scroll?.performAction(AccessibilityNodeInfo.ACTION_SCROLL_FORWARD)
+            SystemClock.sleep(350)
+        }
+        throw AssertionError("Settings row $label was not reachable")
     }
 
     private fun clickTab(label: String) {

@@ -537,15 +537,18 @@ class ReadingWorkflowTest {
         }
         val original = location(4, 0.41, "portrait")
         val reflowed = location(4, 0.32, "landscape")
-        val first = async { library.saveBookmark(book, original, "Second chapter", 1, 100) }
-        val second = async { library.saveBookmark(book, reflowed, "Second chapter", 1, 200) }
-        assertEquals(first.await().bookmarkId, second.await().bookmarkId)
+        val first = async { library.saveBookmarkWithResult(book, original, "Second chapter", 1, 100) }
+        val second = async { library.saveBookmarkWithResult(book, reflowed, "Second chapter", 1, 200) }
+        val firstSave = first.await()
+        val secondSave = second.await()
+        assertEquals(firstSave.bookmark.bookmarkId, secondSave.bookmark.bookmarkId)
+        assertTrue(firstSave.inserted xor secondSave.inserted)
         assertEquals(4, library.bookmarks(book).first().single().location.bookmarkPoint?.charOffset)
         assertTrue(original.locator.matchesBookmarkFallback(location(4, 0.41001, "portrait").locator))
         assertFalse(original.locator.matchesBookmarkFallback(reflowed.locator))
 
         val earlier = library.saveBookmark(book, location(1, 0.12, "portrait"), "Second chapter", 1, 300)
-        assertEquals(listOf(earlier.bookmarkId, first.await().bookmarkId), library.bookmarks(book).first().map { it.record.bookmarkId })
+        assertEquals(listOf(earlier.bookmarkId, firstSave.bookmark.bookmarkId), library.bookmarks(book).first().map { it.record.bookmarkId })
     }
 
     @Test
@@ -634,21 +637,22 @@ class ReadingWorkflowTest {
             before = "Before ", highlight = "a passage\nover two lines", after = " After.",
         ))
         library.recordReading(book, 100, SavedLocation(quote))
-        library.saveHighlight(book.bookId, quote, "Second chapter", 1, HighlightColor.Blue, "Original note")
+        assertTrue(library.saveHighlight(book.bookId, quote, "Second chapter", 1, HighlightColor.Blue, "Original note"))
         val original = library.highlights(book.bookId).first().single()
         database.close()
         openDatabase()
         assertEquals(original, library.highlights(book.bookId).first().single())
 
         val repaginated = quote.copy(locations = quote.locations.copy(progression = 0.2, fragments = listOf("page-break")))
-        library.saveHighlight(book.bookId, repaginated, "Second chapter", 1, HighlightColor.Purple)
+        assertTrue(library.saveHighlight(book.bookId, repaginated, "Second chapter", 1, HighlightColor.Purple))
+        assertFalse(library.saveHighlight(book.bookId, repaginated, "Second chapter", 1, HighlightColor.Purple))
         val recolored = library.highlights(book.bookId).first().single()
         assertEquals(original.record.highlightId, recolored.record.highlightId)
         assertEquals(original.locator, recolored.locator)
         assertEquals(HighlightColor.Purple, recolored.color)
         assertEquals("Original note", recolored.record.note)
 
-        library.saveHighlight(book.bookId, repaginated, "Second chapter", 1, HighlightColor.Yellow, "Edited note")
+        assertFalse(library.saveHighlight(book.bookId, repaginated, "Second chapter", 1, HighlightColor.Yellow, "Edited note"))
         val edited = library.highlights(book.bookId).first().single()
         assertEquals(HighlightColor.Purple, edited.color)
         assertEquals("Edited note", edited.record.note)
