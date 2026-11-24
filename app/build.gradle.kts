@@ -1,3 +1,4 @@
+import java.util.Properties
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
@@ -9,6 +10,20 @@ plugins {
 android {
     namespace = "com.artemis.ebookreader"
     compileSdk = 37
+
+    signingConfigs {
+        create("release") {
+            val propsFile = rootProject.file("keystore.properties")
+            if (propsFile.exists()) {
+                val props = Properties()
+                propsFile.inputStream().use { props.load(it) }
+                storeFile = file(props.getProperty("storeFile", ""))
+                storePassword = props.getProperty("storePassword", "")
+                keyAlias = props.getProperty("keyAlias", "")
+                keyPassword = props.getProperty("keyPassword", "")
+            }
+        }
+    }
 
     defaultConfig {
         applicationId = "com.artemis.ebookreader"
@@ -32,6 +47,9 @@ android {
     }
 
     buildTypes {
+        release {
+            signingConfig = signingConfigs.getByName("release")
+        }
         create("performance") {
             initWith(buildTypes.getByName("release"))
             isDebuggable = false

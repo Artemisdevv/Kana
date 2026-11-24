@@ -3,11 +3,13 @@ package com.artemis.ebookreader.feature.settings
 import java.net.URI
 
 internal object SettingsLinks {
-    private val repositoryUrl: String? = null
-    private val issueUrl: String? = null
+    private val repositoryUrl: String? = "https://github.com/Artemisdevv/Kana"
+    private val issueUrl: String? = "https://github.com/Artemisdevv/Kana/issues/new"
 
     val repository: String? get() = validRepositoryAddress(repositoryUrl)
     val issues: String? get() = repository?.let { validRepositoryAddress(issueUrl, it) }
+
+    val releases: String? get() = "https://github.com/Artemisdevv/Kana/releases"
 }
 
 internal fun validRepositoryAddress(value: String?, repository: String? = null): String? {
