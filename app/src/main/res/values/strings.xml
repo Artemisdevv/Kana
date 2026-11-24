@@ -10,6 +10,10 @@
     <string name="library_grid_adaptive_description">This column count is used in compact windows. Wider windows fit columns to the available space.</string>
     <string name="settings_preferences_group">Preferences</string>
     <string name="settings_data_group">Data &amp; storage</string>
+    <string name="settings_general_group">General</string>
+    <string name="settings_updates_page">Updates</string>
+    <string name="settings_updates_page_summary">Check for updates and automatic checks</string>
+    <string name="settings_update_options">Update options</string>
     <string name="settings_library_preferences">Library preferences</string>
     <string name="settings_backup">Backup &amp; restore</string>
     <string name="settings_storage">Storage</string>
@@ -19,7 +23,12 @@
     <string name="settings_reading_summary">Typography, layout and reader behavior</string>
     <string name="settings_library_summary">Display names, sorting and layout</string>
     <string name="settings_storage_summary">Manage books and cached data</string>
-    <string name="settings_about_summary">App information</string>
+    <string name="settings_about_summary">App information, links and licenses</string>
+    <string name="settings_about_description">Free and open-source EPUB reader for Android.</string>
+    <string name="settings_links_group">Links</string>
+    <string name="settings_license_group">License</string>
+    <string name="settings_gpl">GNU General Public License v3.0</string>
+    <string name="settings_copyright">Copyright © 2026 Artemisdevv.</string>
     <string name="settings_licenses_summary">Libraries and acknowledgements</string>
     <string name="settings_app_theme">Appearance mode</string>
     <string name="app_theme_light">Light</string>
@@ -52,7 +61,6 @@
     <string name="settings_issue_summary">Report bugs or suggest improvements</string>
     <string name="settings_link_unavailable">No browser is available to open this link.</string>
     <string name="settings_version">Installed version</string>
-    <string name="settings_version_unavailable">Version unavailable</string>
     <string name="settings_libraries">Core libraries</string>
     <string name="settings_bundled_fonts">Bundled fonts</string>
     <string name="settings_license_unavailable">No browser is available to open this license.</string>

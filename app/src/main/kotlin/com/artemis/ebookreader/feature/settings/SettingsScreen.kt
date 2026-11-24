@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.HorizontalDivider
@@ -25,6 +26,7 @@ import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.ButtonDefaults
@@ -53,8 +55,10 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.artemis.ebookreader.R
 import com.artemis.ebookreader.data.dictionary.WORDNET_LICENSE_ASSET
 import com.artemis.ebookreader.data.preferences.ApplicationThemeSettings
@@ -78,8 +82,11 @@ internal enum class SettingsPage(
     Library(R.string.settings_library_preferences, R.string.settings_library_summary, R.drawable.ic_grid),
     Backup(R.string.settings_backup, R.string.settings_coming_soon, R.drawable.ic_settings_backup),
     Storage(R.string.settings_storage, R.string.settings_storage_summary, R.drawable.ic_settings_storage),
+    Updates(R.string.settings_updates_page, R.string.settings_updates_page_summary, R.drawable.ic_settings_updates),
     About(R.string.settings_about, R.string.settings_about_summary, R.drawable.ic_settings_info),
-    Licenses(R.string.settings_licenses, R.string.settings_licenses_summary, R.drawable.ic_settings_license),
+    Licenses(R.string.settings_licenses, R.string.settings_licenses_summary, R.drawable.ic_settings_license);
+
+    val parent: SettingsPage? get() = if (this == Licenses) About else null
 }
 
 @Composable
@@ -87,6 +94,7 @@ internal fun SettingsScreen(
     page: SettingsPage?,
     readerAppearance: ReaderAppearanceSettings,
     appAppearance: ApplicationThemeSettings,
+    updates: UpdateController,
     library: LibraryViewModel,
     libraryLayout: LibraryLayout,
     scope: CoroutineScope,
@@ -103,7 +111,7 @@ internal fun SettingsScreen(
     }
     SettingsColumn(bottomPadding) {
         when (page) {
-            null -> SettingsLanding(selectedPage, onOpenPage)
+            null -> SettingsLanding(selectedPage, onOpenPage, updates.installedVersion)
             SettingsPage.Appearance -> ApplicationAppearance(appAppearance, scope)
             SettingsPage.Library -> SettingsGroup(R.string.settings_library_display) {
                 LibraryLayoutOptions(
@@ -112,9 +120,10 @@ internal fun SettingsScreen(
                 SettingsDivider()
                 LibrarySortOptions(library)
             }
-            SettingsPage.Backup -> SettingsLanding(null, onOpenPage)
+            SettingsPage.Backup -> SettingsLanding(null, onOpenPage, updates.installedVersion)
             SettingsPage.Storage -> StorageSettings(importing, onImportBook)
-            SettingsPage.About -> ApplicationInfo()
+            SettingsPage.Updates -> UpdateSettingsPage(updates)
+            SettingsPage.About -> ApplicationInfo(updates.installedVersion, onOpenPage)
             SettingsPage.Licenses -> OpenSourceLicenses()
             SettingsPage.Reading -> Unit
         }
@@ -181,21 +190,21 @@ internal fun SettingsDivider() {
 }
 
 @Composable
-private fun SettingsLanding(selectedPage: SettingsPage?, onOpenPage: (SettingsPage) -> Unit) {
-    val context = LocalContext.current
-    val browser = LocalUriHandler.current
-    val version = installedVersion()
-    fun pageEntry(page: SettingsPage) = SettingsEntry(page.title, page.summary, page.icon, page) { onOpenPage(page) }
-    fun externalEntry(@StringRes title: Int, @StringRes summary: Int, @DrawableRes icon: Int, url: String?): SettingsEntry =
-        SettingsEntry(title, if (url == null) R.string.settings_feature_unavailable else summary, icon, action = url?.let { destination ->
-            {
-                try {
-                    browser.openUri(destination)
-                } catch (_: IllegalArgumentException) {
-                    Toast.makeText(context, R.string.settings_link_unavailable, Toast.LENGTH_SHORT).show()
-                }
-            }
-        })
+private fun SettingsLanding(selectedPage: SettingsPage?, onOpenPage: (SettingsPage) -> Unit, version: String) {
+    SettingsBrand(version)
+    SettingsPageGroup(R.string.settings_preferences_group,
+        listOf(SettingsPage.Appearance, SettingsPage.Reading, SettingsPage.Library).map { it.entry(onOpenPage) }, selectedPage)
+    SettingsPageGroup(R.string.settings_data_group, listOf(
+        SettingsPage.Storage.entry(onOpenPage),
+        SettingsEntry(SettingsPage.Backup.title, SettingsPage.Backup.summary, SettingsPage.Backup.icon),
+    ), selectedPage)
+    SettingsPageGroup(R.string.settings_general_group, listOf(
+        SettingsPage.Updates.entry(onOpenPage), SettingsPage.About.entry(onOpenPage),
+    ), selectedPage)
+}
+
+@Composable
+private fun SettingsBrand(version: String, @StringRes description: Int? = null) {
     Column(
         Modifier.fillMaxWidth().padding(top = 12.dp, bottom = 6.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -214,21 +223,32 @@ private fun SettingsLanding(selectedPage: SettingsPage?, onOpenPage: (SettingsPa
         }
         Text(stringResource(R.string.app_name), style = MaterialTheme.typography.headlineSmall, modifier = Modifier.semantics { heading() })
         Text(
-            version?.let { stringResource(R.string.settings_brand_version, it) } ?: stringResource(R.string.settings_version_unavailable),
+            stringResource(R.string.settings_brand_version, version),
             style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
+        if (description != null) {
+            Text(
+                stringResource(description),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center,
+            )
+        }
     }
-    SettingsPageGroup(R.string.settings_preferences_group,
-        listOf(pageEntry(SettingsPage.Appearance), pageEntry(SettingsPage.Reading), pageEntry(SettingsPage.Library)), selectedPage)
-    SettingsPageGroup(R.string.settings_data_group, listOf(
-        pageEntry(SettingsPage.Storage), SettingsEntry(SettingsPage.Backup.title, SettingsPage.Backup.summary, SettingsPage.Backup.icon),
-    ), selectedPage)
-    SettingsPageGroup(R.string.about, listOf(
-        SettingsEntry(R.string.settings_updates, R.string.settings_coming_soon, R.drawable.ic_settings_updates),
-        externalEntry(R.string.settings_github, R.string.settings_github_summary, R.drawable.ic_settings_code, SettingsLinks.repository),
-        externalEntry(R.string.settings_issue, R.string.settings_issue_summary, R.drawable.ic_settings_issue, SettingsLinks.issues),
-        pageEntry(SettingsPage.Licenses), pageEntry(SettingsPage.About),
-    ), selectedPage)
+}
+
+@Composable
+private fun UpdateSettingsPage(updates: UpdateController) {
+    val automatic by updates.automatic.collectAsStateWithLifecycle(initialValue = true)
+    SettingsGroup(R.string.settings_app_information) {
+        SettingsDetail(R.string.settings_version, updates.installedVersion)
+    }
+    SettingsPageGroup(R.string.settings_update_options, listOf(
+        SettingsEntry(R.string.settings_updates, R.string.update_check_summary, R.drawable.ic_settings_updates,
+            action = updates::manualCheck),
+        SettingsEntry(R.string.update_automatic, R.string.update_automatic_summary, R.drawable.ic_settings_updates,
+            checked = automatic, action = { updates.setAutomatic(!automatic) }),
+    ))
 }
 
 private data class SettingsEntry(
@@ -236,14 +256,18 @@ private data class SettingsEntry(
     @param:StringRes val summary: Int,
     @param:DrawableRes val icon: Int,
     val page: SettingsPage? = null,
+    val checked: Boolean? = null,
     val action: (() -> Unit)? = null,
 )
+
+private fun SettingsPage.entry(onOpenPage: (SettingsPage) -> Unit): SettingsEntry =
+    SettingsEntry(title, summary, icon, this) { onOpenPage(this) }
 
 @Composable
 private fun SettingsPageGroup(
     @StringRes heading: Int,
     entries: List<SettingsEntry>,
-    selectedPage: SettingsPage?,
+    selectedPage: SettingsPage? = null,
 ) {
     SettingsGroup(heading) {
         for ((index, entry) in entries.withIndex()) {
@@ -259,8 +283,16 @@ private fun SettingsPageGroup(
                 headlineContent = { Text(stringResource(entry.title)) },
                 supportingContent = { Text(stringResource(entry.summary)) },
                 leadingContent = { Icon(painterResource(entry.icon), contentDescription = null) },
-                trailingContent = entry.action?.let { { Icon(painterResource(R.drawable.ic_settings_chevron), contentDescription = null) } },
-                modifier = Modifier.then(entry.action?.let { Modifier.clickable(role = Role.Button, onClick = it) } ?: Modifier)
+                trailingContent = entry.action?.let {
+                    {
+                        if (entry.checked != null) Switch(checked = entry.checked, onCheckedChange = null)
+                        else Icon(painterResource(R.drawable.ic_settings_chevron), contentDescription = null)
+                    }
+                },
+                modifier = Modifier.then(entry.action?.let { action ->
+                    if (entry.checked != null) Modifier.toggleable(entry.checked, role = Role.Switch) { action() }
+                    else Modifier.clickable(role = Role.Button, onClick = action)
+                } ?: Modifier)
                     .then(if (isSelected) Modifier.semantics { selected = true } else Modifier),
                 colors = ListItemDefaults.colors(
                     containerColor = rowColor,
@@ -283,21 +315,33 @@ private fun SettingsDetail(@StringRes title: Int, detail: String) {
     )
 }
 
-@Suppress("DEPRECATION")
 @Composable
-private fun installedVersion(): String? {
+private fun ApplicationInfo(version: String, onOpenPage: (SettingsPage) -> Unit) {
     val context = LocalContext.current
-    return remember(context) { context.packageManager.getPackageInfo(context.packageName, 0).versionName }
-}
+    val browser = LocalUriHandler.current
+    fun externalEntry(@StringRes title: Int, @StringRes summary: Int, @DrawableRes icon: Int, url: String?): SettingsEntry =
+        SettingsEntry(title, if (url == null) R.string.settings_feature_unavailable else summary, icon, action = url?.let { destination ->
+            {
+                try {
+                    browser.openUri(destination)
+                } catch (_: IllegalArgumentException) {
+                    Toast.makeText(context, R.string.settings_link_unavailable, Toast.LENGTH_SHORT).show()
+                }
+            }
+        })
 
-@Composable
-private fun ApplicationInfo() {
-    val version = installedVersion()
+    SettingsBrand(version, R.string.settings_about_description)
     SettingsGroup(R.string.settings_app_information) {
         SettingsDetail(R.string.app_name, stringResource(R.string.settings_app_description))
-        SettingsDivider()
-        SettingsDetail(R.string.settings_version, version ?: stringResource(R.string.settings_version_unavailable))
     }
+    SettingsPageGroup(R.string.settings_links_group, listOf(
+        externalEntry(R.string.settings_github, R.string.settings_github_summary, R.drawable.ic_settings_code, SettingsLinks.repository),
+        externalEntry(R.string.settings_issue, R.string.settings_issue_summary, R.drawable.ic_settings_issue, SettingsLinks.issues),
+        SettingsPage.Licenses.entry(onOpenPage),
+    ))
+    SettingsPageGroup(R.string.settings_license_group, listOf(
+        externalEntry(R.string.settings_gpl, R.string.settings_copyright, R.drawable.ic_settings_license, SettingsLinks.license),
+    ))
 }
 
 private data class License(val name: String, val identifier: String, val location: String)
