@@ -20,6 +20,7 @@
 Minimum supported Android version: API 24 (Android 7.0 Nougat).
 
 Releases are published on [GitHub Releases](https://github.com/Artemisdevv/Kana/releases).
+In Kana, use **Settings → Updates → Check for updates** to look for a newer release. Automatic checks are enabled by default. Downloads and installation require your approval.
 
 ## Screenshots
 
@@ -46,6 +47,11 @@ Releases are published on [GitHub Releases](https://github.com/Artemisdevv/Kana/
 - Offline dictionary (WordNet) and online dictionary (Wiktionary)
 - Export books to a directory
 
+## Known limitations
+
+- Drop caps (oversized opening letters) may render incorrectly and overlap surrounding text in certain EPUBs. Disabling publisher formatting does not currently resolve this issue.
+
+
 ## Building from source
 
 Use JDK 17 and install Android SDK Platform 37.0 and Android SDK Build-Tools 36.0.0. Set `ANDROID_HOME` to the SDK directory or open this project in Android Studio and let it configure the local SDK path. The app supports API 24 and up and targets API 36.
@@ -64,7 +70,7 @@ On macOS or Linux:
 
 The debug APK is at `app/build/outputs/apk/debug/app-debug.apk`.
 
-Release signing requires a keystore. Create `keystore.properties` (ignored by `.gitignore`) with your signing credentials and wire it into the release `signingConfig` before building release variants.
+The release build uses the permanent signing key configured in the local, ignored `keystore.properties` file. See the [release publishing and updater test guide](docs/RELEASING.md) for the APK naming convention and signing checks.
 
 See [ARCHITECTURE.md](docs/ARCHITECTURE.md) for developer documentation.
 
