@@ -118,7 +118,15 @@ internal class LibraryRepository(
         chapter: String?,
         spineIndex: Int,
         now: Long,
-    ): Bookmark = dao.saveBookmark(
+    ): Bookmark = saveBookmarkWithResult(book, location, chapter, spineIndex, now).bookmark
+
+    suspend fun saveBookmarkWithResult(
+        book: Book,
+        location: SavedLocation,
+        chapter: String?,
+        spineIndex: Int,
+        now: Long,
+    ): BookmarkSaveResult = dao.saveBookmark(
         Bookmark(
             bookmarkId = UUID.randomUUID().toString(),
             bookId = book.bookId,
@@ -137,15 +145,18 @@ internal class LibraryRepository(
     suspend fun removeBookmark(bookmark: Bookmark): Boolean =
         dao.deleteBookmark(bookmark.bookId, bookmark.bookmarkId) != 0
 
-    suspend fun restoreBookmark(bookmark: Bookmark) = dao.saveBookmark(bookmark)
+    suspend fun restoreBookmark(bookmark: Bookmark): Bookmark = restoreBookmarkWithResult(bookmark).bookmark
+
+    suspend fun restoreBookmarkWithResult(bookmark: Bookmark): BookmarkSaveResult = dao.saveBookmark(bookmark)
 
     fun highlights(bookId: String) = dao.highlights(bookId)
         .map { rows -> rows.mapNotNull(Highlight::resolve) }
         .flowOn(Dispatchers.Default)
 
+    /** Returns true when the transaction inserts a highlight or changes its color. */
     suspend fun saveHighlight(
         bookId: String, selection: Locator, chapter: String?, spineIndex: Int, color: HighlightColor, note: String? = null,
-    ) = withContext(Dispatchers.Default) {
+    ): Boolean = withContext(Dispatchers.Default) {
         val locator = selection.highlightAnchor()
         val text = requireNotNull(locator.text.highlight).also {
             require(it.isNotBlank() && it.length <= MaxHighlightLength)

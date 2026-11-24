@@ -85,6 +85,8 @@ internal data class Bookmark(
     val totalProgression: Double?,
 )
 
+internal data class BookmarkSaveResult(val bookmark: Bookmark, val inserted: Boolean)
+
 internal data class ShelfBook(
     @Embedded val book: Book,
     val available: Boolean,
@@ -187,9 +189,10 @@ internal abstract class LibraryDao {
     abstract suspend fun insertBookmark(bookmark: Bookmark): Long
 
     @Transaction
-    open suspend fun saveBookmark(bookmark: Bookmark): Bookmark {
-        if (insertBookmark(bookmark) != -1L) return bookmark
-        return checkNotNull(bookmarkAt(bookmark.bookId, bookmark.locationKey))
+    open suspend fun saveBookmark(bookmark: Bookmark): BookmarkSaveResult {
+        if (insertBookmark(bookmark) != -1L) return BookmarkSaveResult(bookmark, inserted = true)
+        val existing = checkNotNull(bookmarkAt(bookmark.bookId, bookmark.locationKey))
+        return BookmarkSaveResult(existing, inserted = false)
     }
 
     @Query("DELETE FROM bookmarks WHERE bookId = :bookId AND bookmarkId = :bookmarkId")
