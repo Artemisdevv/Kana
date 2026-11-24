@@ -33,7 +33,7 @@ Releases are published on [GitHub Releases](https://github.com/Artemisdevv/Kana/
 
 ## Features
 
-- Import DRM-free EPUBs through the system file picker
+- Import EPUBs through the system file picker
 - Deduplication: byte-identical books share one Library entry
 - Library in grid or list view, with search and sort
 - Continue reading from Home and reading history
