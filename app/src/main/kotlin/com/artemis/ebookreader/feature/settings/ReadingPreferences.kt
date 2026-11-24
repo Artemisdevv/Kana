@@ -161,6 +161,9 @@ internal fun ReadingPreferences(
     fun setKeepScreenAwake(enabled: Boolean) = save { settings.setKeepScreenAwake(enabled) }
 
     if (inReader) Column(modifier.fillMaxWidth()) {
+        PublisherStylesCard(current.layout.publisherStyles) { value ->
+            edit { it.copy(publisherStyles = value) }
+        }
         PrimaryTabRow(selectedTabIndex = tab.ordinal, containerColor = Color.Transparent) {
             for (choice in ReadingPreferenceTab.entries) {
                 Tab(selected = choice == tab, onClick = { tab = choice }, text = { Text(stringResource(choice.label)) })
@@ -206,6 +209,9 @@ internal fun ReadingPreferences(
                     onTheme = ::setTheme, onFullscreen = ::setFullscreen, onPageNumbers = ::setPageNumbers,
                 )
             }
+        }
+        PublisherStylesCard(current.layout.publisherStyles) { value ->
+            edit { it.copy(publisherStyles = value) }
         }
         SettingsGroup(R.string.reader_text) {
             Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -357,6 +363,28 @@ private fun TextOptions(layout: ReaderLayout, edit: ((ReaderLayout) -> ReaderLay
 }
 
 @Composable
+private fun PublisherStylesCard(
+    publisherStyles: Boolean,
+    onPublisherStyles: (Boolean) -> Unit,
+) {
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = MaterialTheme.shapes.large,
+        color = MaterialTheme.colorScheme.surfaceContainerLow,
+    ) {
+        Column(Modifier.padding(horizontal = 12.dp, vertical = 8.dp)) {
+            ListItem(
+                headlineContent = { Text(stringResource(R.string.reader_publisher_styles)) },
+                supportingContent = { Text(stringResource(R.string.reader_publisher_styles_hint)) },
+                trailingContent = { Switch(checked = publisherStyles, onCheckedChange = null) },
+                modifier = Modifier.toggleable(publisherStyles, role = Role.Switch, onValueChange = onPublisherStyles),
+                colors = ListItemDefaults.colors(containerColor = Color.Transparent),
+            )
+        }
+    }
+}
+
+@Composable
 private fun LayoutOptions(layout: ReaderLayout, verticalText: Boolean, edit: ((ReaderLayout) -> ReaderLayout) -> Unit, grouped: Boolean = false) {
     ChoiceMenu(R.string.reader_reading_mode, layout.scroll || verticalText, listOf(false, true),
         label = { stringResource(if (it) R.string.reader_continuous else R.string.reader_paginated) },
@@ -364,15 +392,6 @@ private fun LayoutOptions(layout: ReaderLayout, verticalText: Boolean, edit: ((R
         edit { it.copy(scroll = value) }
     }
     if (verticalText) Text(stringResource(R.string.reader_vertical_text_note), style = MaterialTheme.typography.bodySmall)
-    if (grouped) SettingsDivider()
-    ListItem(
-        headlineContent = { Text(stringResource(R.string.reader_publisher_styles)) },
-        supportingContent = { Text(stringResource(R.string.reader_publisher_styles_hint)) },
-        trailingContent = { Switch(checked = layout.publisherStyles, onCheckedChange = null) },
-        modifier = Modifier.toggleable(layout.publisherStyles, role = Role.Switch) { value -> edit { it.copy(publisherStyles = value) } },
-        colors = if (grouped) ListItemDefaults.colors(containerColor = Color.Transparent) else ListItemDefaults.colors(),
-    )
-    if (grouped) SettingsDivider()
     ScaleControl(R.string.reader_horizontal_margin, ReaderScale.HorizontalMargins, layout.horizontalMargins, R.string.reader_percent) { value ->
         edit { it.copy(horizontalMargins = requireNotNull(value)) }
     }
