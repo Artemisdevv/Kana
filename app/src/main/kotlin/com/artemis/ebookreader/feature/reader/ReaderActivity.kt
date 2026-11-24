@@ -9,9 +9,9 @@ import android.graphics.drawable.ColorDrawable
 import android.graphics.Rect
 import android.os.Build
 import android.os.Bundle
+import android.os.Looper
 import android.os.SystemClock
 import android.util.Log
-import android.view.HapticFeedbackConstants
 import android.view.MotionEvent
 import android.view.View
 import android.view.ViewConfiguration
@@ -41,6 +41,7 @@ import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.platform.ViewCompositionStrategy
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.core.view.HapticFeedbackConstantsCompat
 import androidx.core.view.ViewCompat
 import androidx.core.graphics.Insets
 import androidx.core.graphics.ColorUtils
@@ -194,6 +195,7 @@ internal class ReaderActivity : FragmentActivity() {
     private var footerMarginJob: Job? = null
 
     private val pageFooter get() = findViewById<TextView>(R.id.reader_page_number)
+    private lateinit var readerRoot: ReaderSelectionLayout
     private val footerHeight get() = resources.getDimensionPixelSize(R.dimen.reader_footer_height)
 
     private val layoutKey: String
@@ -222,9 +224,18 @@ internal class ReaderActivity : FragmentActivity() {
         appearance = app.readerAppearance.appearance.value ?: ReaderAppearance()
         setContentView(R.layout.activity_reader)
         val root = findViewById<ReaderSelectionLayout>(R.id.reader_root)
+        readerRoot = root
         root.canShowSelection = {
             didDisplay && reflowable && navigator != null && dictionarySelection == null && noteDraft == null &&
                 !showBookmarks && !showChapters && preferenceTab == null && highlightRemoval == null
+        }
+        root.hasSelection = { selectionMenu != null }
+        root.onInitialSelection = { webView ->
+            if (webView.isHapticFeedbackEnabled) {
+                root.logReaderHaptic { "selection skipped=native_enabled" }
+            } else {
+                performReaderHaptic("selection")
+            }
         }
         root.onSelectionAnchor = { session, anchor ->
             if (selectionMenu?.session != session) {
@@ -620,13 +631,18 @@ internal class ReaderActivity : FragmentActivity() {
             val selection = withTimeoutOrNull(1000) {
                 reader.currentSelection()?.locator
             }
-            if (!session.finish()) return@launch
+            if (!session.finish()) {
+                readerRoot.logReaderHaptic { "selection_action skipped=session_ended" }
+                return@launch
+            }
             reader.clearSelection()
             hideControlsForPassage()
             when {
                 allowEmpty -> action(selection ?: reader.currentLocator.value.copy(text = Locator.Text()))
-                selection == null || selection.text.highlight.isNullOrBlank() ->
+                selection == null || selection.text.highlight.isNullOrBlank() -> {
+                    readerRoot.logReaderHaptic { "selection_action skipped=selection_missing" }
                     showHighlightFeedback(R.string.highlight_selection_missing)
+                }
                 else -> action(selection)
             }
         }
@@ -660,8 +676,8 @@ internal class ReaderActivity : FragmentActivity() {
             val changed = if (existing != null) {
                 app.library.setHighlightNote(bookId, existing.record.highlightId, note)
             } else {
-                app.library.saveHighlight(bookId, draft.locator, draft.chapter, draft.spineIndex, color, note)
-                confirmReaderAction()
+                val applied = app.library.saveHighlight(bookId, draft.locator, draft.chapter, draft.spineIndex, color, note)
+                confirmReaderAction("highlight_apply", applied)
                 true
             }
             if (changed) showHighlightFeedback(if (note == null) R.string.highlight_saved else R.string.highlight_note_saved)
@@ -690,18 +706,39 @@ internal class ReaderActivity : FragmentActivity() {
     private fun changeHighlightColor(entry: SavedHighlight, color: HighlightColor) {
         closeHighlightMenu()
         writeHighlight {
-            if (app.library.setHighlightColor(entry.record.bookId, entry.record.highlightId, color)) {
-                confirmReaderAction()
+            val applied = app.library.setHighlightColor(entry.record.bookId, entry.record.highlightId, color)
+            confirmReaderAction("highlight_color", applied)
+            if (applied) {
                 showHighlightFeedback(R.string.highlight_saved)
             }
         }
     }
 
-    private fun confirmReaderAction() {
-        if (isFinishing || !lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED)) return
-        window.decorView.performHapticFeedback(
-            HapticFeedbackConstants.LONG_PRESS
-        )
+    private fun confirmReaderAction(event: String, changed: Boolean) {
+        if (changed) performReaderHaptic(event)
+        else readerRoot.logReaderHaptic { "$event skipped=no_persisted_change" }
+    }
+
+    private fun performReaderHaptic(event: String) {
+        // Use the attached reader surface. Readium disables haptics on the page WebView.
+        val root = readerRoot
+        val mainThread = Looper.getMainLooper().isCurrentThread
+        val state = lifecycle.currentState
+        val skipped = when {
+            !mainThread -> "off_main_thread"
+            isFinishing || isDestroyed || !state.isAtLeast(Lifecycle.State.RESUMED) -> "inactive_reader"
+            !root.isAttachedToWindow || !root.isShown -> "reader_view_unavailable"
+            else -> null
+        }
+        // Match the library's pulse and let Android apply the user's touch feedback settings.
+        val accepted = if (skipped == null) {
+            ViewCompat.performHapticFeedback(root, HapticFeedbackConstantsCompat.LONG_PRESS)
+        } else null
+        root.logReaderHaptic {
+            "$event accepted=$accepted skipped=$skipped main=$mainThread lifecycle=$state " +
+                "attached=${root.isAttachedToWindow} shown=${root.isShown} focused=${root.hasWindowFocus()} " +
+                "viewEnabled=${root.isHapticFeedbackEnabled} decorEnabled=${window.decorView.isHapticFeedbackEnabled}"
+        }
     }
 
     private fun requestHighlightRemoval(entry: SavedHighlight) {
@@ -854,7 +891,10 @@ internal class ReaderActivity : FragmentActivity() {
     }
 
     private fun toggleBookmark() {
-        if (!bookmarkMatchReady || bookmarkWritePending || repositioning || isPageBeingDragged()) return
+        if (!bookmarkMatchReady || bookmarkWritePending || repositioning || isPageBeingDragged()) {
+            readerRoot.logReaderHaptic { "bookmark_toggle skipped=reader_not_ready_or_write_pending" }
+            return
+        }
         bookmarkAtLocation?.let { existing ->
             removeBookmark(existing)
             return
@@ -881,6 +921,7 @@ internal class ReaderActivity : FragmentActivity() {
                 displayedLocation?.matchesBookmarkFallback(location) != true ||
                 !reader.currentLocator.value.matchesBookmarkFallback(location) || layoutKey != layout
             ) {
+                readerRoot.logReaderHaptic { "bookmark_add skipped=location_changed" }
                 finishBookmarkChange()
                 showBookmarkFeedback(R.string.reader_bookmark_error)
                 return@launch
@@ -890,10 +931,11 @@ internal class ReaderActivity : FragmentActivity() {
                 it.url().removeFragment().isEquivalent(location.href.removeFragment())
             }.takeIf { it >= 0 } ?: Int.MAX_VALUE
             writeBookmark(R.string.reader_bookmark_saved) {
-                val record = app.library.saveBookmark(book.book, saved, chapter, spineIndex, now)
+                val (record, inserted) = app.library.saveBookmarkWithResult(book.book, saved, chapter, spineIndex, now)
                 if (displayedLocation?.matchesBookmarkFallback(location) == true) {
                     bookmarkAtLocation = ResolvedBookmark(record, SavedLocation.decode(record.locator, book.book.assetSha256) ?: saved)
                 }
+                confirmReaderAction("bookmark_add", inserted)
                 true
             }
         }
@@ -905,6 +947,7 @@ internal class ReaderActivity : FragmentActivity() {
         writeBookmark(R.string.reader_bookmark_removed, undo = bookmark.record) {
             val removed = app.library.removeBookmark(bookmark.record)
             if (bookmarkAtLocation == bookmark) bookmarkAtLocation = null
+            confirmReaderAction("bookmark_remove", removed)
             removed
         }
     }
@@ -920,7 +963,6 @@ internal class ReaderActivity : FragmentActivity() {
         app.scope.launch {
             try {
                 if (change() && !isDestroyed) {
-                    confirmReaderAction()
                     showBookmarkFeedback(message, undo)
                 }
             } catch (cancelled: CancellationException) {
@@ -950,7 +992,8 @@ internal class ReaderActivity : FragmentActivity() {
             )
             if (undo != null && result == SnackbarResult.ActionPerformed) {
                 writeBookmark(R.string.reader_bookmark_restored) {
-                    app.library.restoreBookmark(undo)
+                    val restored = app.library.restoreBookmarkWithResult(undo)
+                    confirmReaderAction("bookmark_restore", restored.inserted)
                     true
                 }
             }
