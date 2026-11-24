@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="reader_define">Define</string>
+    <string name="dictionary_title">Dictionary</string>
+    <string name="dictionary_select_word">Select a word or short phrase to look it up.</string>
+    <string name="dictionary_offline">Offline definitions</string>
+    <string name="dictionary_wordnet">Princeton WordNet 3.0</string>
+    <string name="dictionary_base_word">Base form: %1$s</string>
+    <string name="dictionary_offline_missing">No offline definition found. Try looking up a single word or request online definitions.</string>
+    <string name="dictionary_offline_unavailable">The offline dictionary could not be opened.</string>
+    <string name="dictionary_more_online">More online definitions</string>
+    <string name="dictionary_online">Online definitions</string>
+    <string name="dictionary_online_provider">Free Dictionary API</string>
+    <string name="dictionary_online_privacy">Sends this word or phrase to Free Dictionary API.</string>
+    <string name="dictionary_online_missing">No online definition found.</string>
+    <string name="dictionary_online_unavailable">Online definitions are unavailable. Check your connection or try again later.</string>
+    <string name="dictionary_online_rate_limited">The dictionary service is busy. Try again later.</string>
+    <string name="dictionary_looking_up">Looking up definitions…</string>
+    <string name="dictionary_retry_online">Retry online lookup</string>
+    <string name="settings_dictionary_sources">Dictionary sources</string>
+</resources>

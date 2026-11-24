@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.EBookReader" parent="android:style/Theme.Material.Light.NoActionBar">
+        <item name="android:windowBackground">@android:color/white</item>
+        <item name="android:windowLightStatusBar">true</item>
+    </style>
+    <style name="Theme.EBookReader.Reader" parent="Theme.EBookReader">
+        <item name="android:windowDisablePreview">true</item>
+    </style>
+    <integer name="reader_transition_duration">220</integer>
+    <integer name="chapter_dialog_enter_duration">180</integer>
+    <integer name="chapter_dialog_exit_duration">120</integer>
+    <style name="Animation.EBookReader.ChapterDialog" parent="">
+        <item name="android:windowEnterAnimation">@anim/chapter_dialog_enter</item>
+        <item name="android:windowExitAnimation">@anim/chapter_dialog_exit</item>
+    </style>
+</resources>
+

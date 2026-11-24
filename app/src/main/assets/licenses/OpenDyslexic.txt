@@ -1,0 +1,9 @@
+OpenDyslexic Regular, version 2.001
+
+The bundled font identifies Bitstream as the copyright holder of the original fonts. OpenDyslexic changes and additional glyphs are by Abelardo Gonzalez (2012) and are licensed under Creative Commons Attribution 3.0 Unported.
+
+Creative Commons Attribution 3.0 Unported
+https://creativecommons.org/licenses/by/3.0/
+
+The font names the following location for the original Bitstream font license:
+https://opendyslexic.org/legal/

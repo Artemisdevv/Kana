@@ -1,0 +1,420 @@
+{
+  "formatVersion": 1,
+  "database": {
+    "version": 5,
+    "identityHash": "cf946043aeacac47eb46c708b4677663",
+    "entities": [
+      {
+        "tableName": "books",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`bookId` TEXT NOT NULL, `assetSha256` TEXT NOT NULL, `title` TEXT NOT NULL, `authorsJson` TEXT NOT NULL, `language` TEXT, `publisher` TEXT, `identifier` TEXT, `sourceName` TEXT, `importedAt` INTEGER NOT NULL, PRIMARY KEY(`bookId`), FOREIGN KEY(`assetSha256`) REFERENCES `imported_files`(`sha256`) ON UPDATE NO ACTION ON DELETE NO ACTION )",
+        "fields": [
+          {
+            "fieldPath": "bookId",
+            "columnName": "bookId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "assetSha256",
+            "columnName": "assetSha256",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "title",
+            "columnName": "title",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "authorsJson",
+            "columnName": "authorsJson",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "language",
+            "columnName": "language",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "publisher",
+            "columnName": "publisher",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "identifier",
+            "columnName": "identifier",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "sourceName",
+            "columnName": "sourceName",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "importedAt",
+            "columnName": "importedAt",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "bookId"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_books_assetSha256",
+            "unique": true,
+            "columnNames": [
+              "assetSha256"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_books_assetSha256` ON `${TABLE_NAME}` (`assetSha256`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "imported_files",
+            "onDelete": "NO ACTION",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "assetSha256"
+            ],
+            "referencedColumns": [
+              "sha256"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "imported_files",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`sha256` TEXT NOT NULL, `format` TEXT NOT NULL, `byteLength` INTEGER NOT NULL, `state` TEXT NOT NULL, PRIMARY KEY(`sha256`))",
+        "fields": [
+          {
+            "fieldPath": "sha256",
+            "columnName": "sha256",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "format",
+            "columnName": "format",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "byteLength",
+            "columnName": "byteLength",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "state",
+            "columnName": "state",
+            "affinity": "TEXT",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "sha256"
+          ]
+        }
+      },
+      {
+        "tableName": "reading_state",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`bookId` TEXT NOT NULL, `lastReadAt` INTEGER, `positionUpdatedAt` INTEGER, `locator` TEXT, `section` TEXT, `progression` REAL, `historyHiddenAt` INTEGER, PRIMARY KEY(`bookId`), FOREIGN KEY(`bookId`) REFERENCES `books`(`bookId`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "fields": [
+          {
+            "fieldPath": "bookId",
+            "columnName": "bookId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "lastReadAt",
+            "columnName": "lastReadAt",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "positionUpdatedAt",
+            "columnName": "positionUpdatedAt",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "locator",
+            "columnName": "locator",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "section",
+            "columnName": "section",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "progression",
+            "columnName": "progression",
+            "affinity": "REAL"
+          },
+          {
+            "fieldPath": "historyHiddenAt",
+            "columnName": "historyHiddenAt",
+            "affinity": "INTEGER"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "bookId"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_reading_state_lastReadAt_bookId",
+            "unique": false,
+            "columnNames": [
+              "lastReadAt",
+              "bookId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_reading_state_lastReadAt_bookId` ON `${TABLE_NAME}` (`lastReadAt`, `bookId`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "books",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "bookId"
+            ],
+            "referencedColumns": [
+              "bookId"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "bookmarks",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`bookmarkId` TEXT NOT NULL, `bookId` TEXT NOT NULL, `locationKey` TEXT NOT NULL, `locator` TEXT NOT NULL, `chapter` TEXT, `excerpt` TEXT, `createdAt` INTEGER NOT NULL, `spineIndex` INTEGER NOT NULL, `resourceProgression` REAL, `totalProgression` REAL, PRIMARY KEY(`bookmarkId`), FOREIGN KEY(`bookId`) REFERENCES `books`(`bookId`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "fields": [
+          {
+            "fieldPath": "bookmarkId",
+            "columnName": "bookmarkId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "bookId",
+            "columnName": "bookId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "locationKey",
+            "columnName": "locationKey",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "locator",
+            "columnName": "locator",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "chapter",
+            "columnName": "chapter",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "excerpt",
+            "columnName": "excerpt",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "createdAt",
+            "columnName": "createdAt",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "spineIndex",
+            "columnName": "spineIndex",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "resourceProgression",
+            "columnName": "resourceProgression",
+            "affinity": "REAL"
+          },
+          {
+            "fieldPath": "totalProgression",
+            "columnName": "totalProgression",
+            "affinity": "REAL"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "bookmarkId"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_bookmarks_bookId_locationKey",
+            "unique": true,
+            "columnNames": [
+              "bookId",
+              "locationKey"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_bookmarks_bookId_locationKey` ON `${TABLE_NAME}` (`bookId`, `locationKey`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "books",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "bookId"
+            ],
+            "referencedColumns": [
+              "bookId"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "highlights",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`highlightId` TEXT NOT NULL, `bookId` TEXT NOT NULL, `rangeKey` TEXT NOT NULL, `locator` TEXT NOT NULL, `selectedText` TEXT NOT NULL, `chapter` TEXT, `colorKey` TEXT NOT NULL, `note` TEXT, `createdAt` INTEGER NOT NULL, `modifiedAt` INTEGER NOT NULL, `spineIndex` INTEGER NOT NULL, `resourceProgression` REAL, PRIMARY KEY(`highlightId`), FOREIGN KEY(`bookId`) REFERENCES `books`(`bookId`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "fields": [
+          {
+            "fieldPath": "highlightId",
+            "columnName": "highlightId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "bookId",
+            "columnName": "bookId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "rangeKey",
+            "columnName": "rangeKey",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "locator",
+            "columnName": "locator",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "selectedText",
+            "columnName": "selectedText",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "chapter",
+            "columnName": "chapter",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "colorKey",
+            "columnName": "colorKey",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "note",
+            "columnName": "note",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "createdAt",
+            "columnName": "createdAt",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "modifiedAt",
+            "columnName": "modifiedAt",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "spineIndex",
+            "columnName": "spineIndex",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "resourceProgression",
+            "columnName": "resourceProgression",
+            "affinity": "REAL"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "highlightId"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_highlights_bookId_rangeKey",
+            "unique": true,
+            "columnNames": [
+              "bookId",
+              "rangeKey"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_highlights_bookId_rangeKey` ON `${TABLE_NAME}` (`bookId`, `rangeKey`)"
+          },
+          {
+            "name": "index_highlights_bookId_spineIndex_resourceProgression_createdAt_highlightId",
+            "unique": false,
+            "columnNames": [
+              "bookId",
+              "spineIndex",
+              "resourceProgression",
+              "createdAt",
+              "highlightId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_highlights_bookId_spineIndex_resourceProgression_createdAt_highlightId` ON `${TABLE_NAME}` (`bookId`, `spineIndex`, `resourceProgression`, `createdAt`, `highlightId`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "books",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "bookId"
+            ],
+            "referencedColumns": [
+              "bookId"
+            ]
+          }
+        ]
+      }
+    ],
+    "setupQueries": [
+      "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'cf946043aeacac47eb46c708b4677663')"
+    ]
+  }
+}

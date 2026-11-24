@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="storage_overview">Kana storage usage</string>
+    <string name="storage_scope">Measures regular files in Kana’s private storage. Installed app files and storage managed outside that folder are excluded.</string>
+    <string name="storage_dictionary_scope">Offline dictionary usage counts the local database unpacked after first use. A bundled copy is included in the app.</string>
+    <string name="storage_books">Books</string>
+    <string name="storage_covers">Book covers</string>
+    <string name="storage_dictionary">Offline dictionary</string>
+    <string name="storage_cache">Cache</string>
+    <string name="storage_reading">Reading data</string>
+    <string name="storage_other">Other</string>
+    <string name="storage_not_measured">Unavailable</string>
+    <string name="storage_refresh">Refresh storage usage</string>
+    <string name="storage_measuring">Measuring storage…</string>
+    <string name="storage_checking">Checking the library…</string>
+    <string name="storage_clearing">Clearing temporary files…</string>
+    <string name="storage_measure_failed">Could not refresh storage usage. Tap Refresh to try again.</string>
+    <string name="storage_check_failed">Could not complete the integrity check. Try again.</string>
+    <string name="storage_clear_failed">Could not clear temporary files. Try again.</string>
+    <string name="storage_library">Library storage</string>
+    <string name="storage_imported">Imported books</string>
+    <plurals name="storage_imported_count">
+        <item quantity="one">%d book</item>
+        <item quantity="other">%d books</item>
+    </plurals>
+    <plurals name="storage_books_on_device">
+        <item quantity="one">%d book on this device</item>
+        <item quantity="other">%d books on this device</item>
+    </plurals>
+    <string name="storage_imported_size">%1$s · %2$s</string>
+    <string name="storage_available">Available device storage</string>
+    <string name="storage_maintenance">Maintenance</string>
+    <string name="storage_clear">Clear cache</string>
+    <string name="storage_no_cache">No temporary files are safe to remove.</string>
+    <string name="storage_cache_available">%1$s of removable temporary files</string>
+    <string name="storage_confirm_clear">Remove abandoned import and cover scratch files (%1$s measured). Your library, reading data, dictionary, and active files will be kept.</string>
+    <string name="storage_cache_result">Cache cleanup</string>
+    <string name="storage_cleared">%1$s of temporary files removed.</string>
+    <string name="storage_clear_partial">Removed %1$s of temporary files. Could not remove %2$d files.</string>
+    <string name="storage_check">Check library integrity</string>
+    <string name="storage_check_summary">Check the catalog against the files stored by Kana</string>
+    <string name="storage_integrity_results">Library integrity</string>
+    <string name="storage_integrity_success">No storage issues found.</string>
+    <string name="storage_issue_group">%1$s (%2$d)</string>
+    <string name="storage_issue_bytes">%1$s on disk</string>
+    <string name="storage_missing">Missing book files</string>
+    <string name="storage_mismatched">Books needing repair</string>
+    <string name="storage_unreferenced">Unreferenced ebook files</string>
+    <string name="storage_orphaned_covers">Orphaned covers</string>
+    <string name="storage_abandoned">Abandoned import files</string>
+    <string name="storage_pending">Staged deletions</string>
+    <string name="storage_unexpected">Unexpected files or catalog entries</string>
+    <string name="storage_missing_guidance">Reimport the same original EPUB to relink it and keep its reading data.</string>
+    <string name="storage_reimport">Reimport original EPUB</string>
+    <string name="storage_recovery_guidance">These files are kept for possible recovery.</string>
+    <string name="storage_abandoned_guidance">Clear cache can remove eligible abandoned scratch files.</string>
+    <string name="storage_pending_guidance">Kana checks staged deletions during recovery. Unresolved files are kept.</string>
+    <string name="storage_unexpected_guidance">These entries require review. They are kept in place.</string>
+</resources>

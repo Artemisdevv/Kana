@@ -1,0 +1,41 @@
+[versions]
+agp = "9.5.2"
+kotlin = "2.4.20"
+compose-bom = "2026.02.01"
+activity = "1.13.0"
+readium = "3.4.0"
+room = "2.8.4"
+ksp = "2.3.12"
+fragment = "1.8.9"
+lifecycle = "2.10.0"
+android-test = "1.7.0"
+junit = "4.13.2"
+desugar = "2.1.5"
+datastore = "1.2.1"
+
+[libraries]
+androidx-activity-compose = { module = "androidx.activity:activity-compose", version.ref = "activity" }
+androidx-compose-bom = { module = "androidx.compose:compose-bom", version.ref = "compose-bom" }
+androidx-compose-foundation = { module = "androidx.compose.foundation:foundation" }
+androidx-compose-material3 = { module = "androidx.compose.material3:material3" }
+androidx-compose-adaptive = { module = "androidx.compose.material3.adaptive:adaptive" }
+androidx-compose-adaptive-layout = { module = "androidx.compose.material3.adaptive:adaptive-layout" }
+androidx-compose-ui = { module = "androidx.compose.ui:ui" }
+androidx-fragment = { module = "androidx.fragment:fragment-ktx", version.ref = "fragment" }
+androidx-lifecycle-compose = { module = "androidx.lifecycle:lifecycle-runtime-compose", version.ref = "lifecycle" }
+androidx-lifecycle-viewmodel = { module = "androidx.lifecycle:lifecycle-viewmodel-ktx", version.ref = "lifecycle" }
+androidx-room-runtime = { module = "androidx.room:room-runtime", version.ref = "room" }
+androidx-room-compiler = { module = "androidx.room:room-compiler", version.ref = "room" }
+readium-shared = { module = "org.readium.kotlin-toolkit:readium-shared", version.ref = "readium" }
+readium-streamer = { module = "org.readium.kotlin-toolkit:readium-streamer", version.ref = "readium" }
+readium-navigator = { module = "org.readium.kotlin-toolkit:readium-navigator", version.ref = "readium" }
+androidx-test-runner = { module = "androidx.test:runner", version.ref = "android-test" }
+junit = { module = "junit:junit", version.ref = "junit" }
+desugar-jdk = { module = "com.android.tools:desugar_jdk_libs", version.ref = "desugar" }
+androidx-datastore-preferences = { module = "androidx.datastore:datastore-preferences", version.ref = "datastore" }
+
+[plugins]
+android-application = { id = "com.android.application", version.ref = "agp" }
+compose-compiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
+ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
+

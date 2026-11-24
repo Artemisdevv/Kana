@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.artemis.ebookreader.feature.reader.ReaderSelectionLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/reader_root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <androidx.fragment.app.FragmentContainerView
+        android:id="@+id/publication_container"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
+
+    <TextView
+        android:id="@+id/reader_page_number"
+        android:layout_width="match_parent"
+        android:layout_height="@dimen/reader_footer_height"
+        android:layout_gravity="bottom"
+        android:gravity="top|end"
+        android:layoutDirection="ltr"
+        android:paddingTop="7dp"
+        android:includeFontPadding="false"
+        android:fontFamily="sans-serif"
+        android:singleLine="true"
+        android:textSize="12sp"
+        android:visibility="gone" />
+
+    <androidx.compose.ui.platform.ComposeView
+        android:id="@+id/reader_message"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
+
+    <androidx.compose.ui.platform.ComposeView
+        android:id="@+id/reader_top_controls"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="top" />
+
+    <androidx.compose.ui.platform.ComposeView
+        android:id="@+id/reader_bottom_controls"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom" />
+</com.artemis.ebookreader.feature.reader.ReaderSelectionLayout>

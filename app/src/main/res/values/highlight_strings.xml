@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="highlight_yellow">Yellow highlight</string>
+    <string name="highlight_green">Green highlight</string>
+    <string name="highlight_blue">Blue highlight</string>
+    <string name="highlight_pink">Pink highlight</string>
+    <string name="highlight_purple">Purple highlight</string>
+    <string name="highlight_copy">Copy</string>
+    <string name="highlight_note">Note</string>
+    <string name="highlight_add_note">Add note</string>
+    <string name="highlight_edit_note">Edit note</string>
+    <string name="highlight_remove_note">Remove note</string>
+    <string name="highlight_save_note">Save note</string>
+    <string name="highlight_note_saved">Note saved</string>
+    <string name="highlight_note_removed">Note removed</string>
+    <string name="highlight_note_too_long">Notes can contain up to 24,000 characters.</string>
+    <string name="highlight_saved">Highlight saved</string>
+    <string name="highlight_restore">Highlight restored</string>
+    <string name="highlight_remove">Remove</string>
+    <string name="highlight_remove_full">Remove highlight</string>
+    <string name="highlight_removed">Highlight removed</string>
+    <string name="highlight_removed_with_note">Highlight and note removed</string>
+    <string name="highlight_remove_confirm">This also removes the attached note.</string>
+    <string name="highlight_error">Could not update this saved passage.</string>
+    <string name="highlight_selection_missing">Select a passage to continue.</string>
+    <string name="highlight_selection_too_long">Select a shorter passage to save it.</string>
+    <string name="highlight_unavailable">Could not open this saved passage.</string>
+    <string name="saved_passages">Saved passages</string>
+    <string name="saved_highlights">Highlights</string>
+    <string name="saved_notes">Notes</string>
+    <string name="saved_highlights_empty">Select text and choose a color to save a highlight.</string>
+    <string name="saved_notes_empty">Select text and tap Note to save your thoughts.</string>
+    <string name="saved_passage_actions">Saved passage actions</string>
+</resources>

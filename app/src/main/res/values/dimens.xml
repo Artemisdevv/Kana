@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <dimen name="reader_viewport_top_padding">16dp</dimen>
+    <dimen name="reader_footer_height">36dp</dimen>
+    <!-- The publication container supplies vertical spacing in both Readium modes. -->
+    <dimen name="readium_navigator_epub_vertical_padding">0dp</dimen>
+</resources>
