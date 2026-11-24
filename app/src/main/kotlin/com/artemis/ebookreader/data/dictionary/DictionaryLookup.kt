@@ -34,6 +34,23 @@ internal enum class WordNetPart(val label: String) {
 }
 
 internal data class DictionarySense(val definition: String, val examples: List<String>)
+
+// The bundled gloss stores examples after a newline, but some remain on the definition line.
+// Match standalone quotations and quotations with a dash attribution. Leave usage prose intact.
+private val inlineWordNetExample =
+    Regex(""";[ \t]*("([^"]+)"(?:[ \t]*-{1,2}[ \t]*[^;"]+)?)[ \t]*(?:;[ \t]*$|(?=;|$))""")
+
+internal fun parseWordNetGloss(gloss: String): DictionarySense {
+    val lines = gloss.lines()
+    val examples = mutableListOf<String>()
+    val definition = inlineWordNetExample.replace(lines.first()) { match ->
+        val quotation = match.groupValues[1].trimEnd()
+        examples.add(if (quotation.endsWith('"')) match.groupValues[2] else quotation)
+        ""
+    }
+    return DictionarySense(definition, examples + lines.drop(1))
+}
+
 internal data class DictionaryMeaning(val partOfSpeech: String?, val senses: List<DictionarySense>)
 internal data class DictionaryCredit(val name: String, val url: String)
 internal data class DictionaryEntry(

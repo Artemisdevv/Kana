@@ -71,8 +71,7 @@ internal class OfflineDictionary(private val context: Context) {
                 while (cursor.moveToNext()) {
                     val part = WordNetPart.entries[cursor.getInt(1)]
                     if (parts != null && part !in parts) continue
-                    val gloss = cursor.getString(2).lines()
-                    put(cursor.getInt(0), part to DictionarySense(gloss.first(), gloss.drop(1)))
+                    put(cursor.getInt(0), part to parseWordNetGloss(cursor.getString(2)))
                 }
             }
         }
